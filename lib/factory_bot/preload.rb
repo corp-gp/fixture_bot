@@ -14,26 +14,23 @@ module FactoryBot
     require "factory_bot/preload/minitest" if defined?(Minitest)
     require "factory_bot/preload/extension"
 
-    DUMP_RECORDS_PATH = Rails.root.join("tmp/fixture_records_dump")
-
     module_function
 
     def run
-      if max_mtime_fixtures > cached_mtime_fixtures
+      cached_mtime, cached_record_ids = cached_fixtures
+      if cached_mtime && cached_mtime == max_mtime_fixtures
+        puts "Cache load fixtures".yellow
+
+        FactoryBot::Preload::FixtureCreator.record_ids = Marshal.load(cached_record_ids)
+        define_fixture_helpers
+      else
         puts "Full load fixtures".yellow
 
         clean_db
         load_models
         define_fixture_helpers
         FactoryBot::Preload::FixtureCreator.load_to_db
-
-        File.binwrite(DUMP_RECORDS_PATH, Marshal.dump(FactoryBot::Preload::FixtureCreator.record_ids))
-        caching_max_mtime_fixtures
-      else
-        puts "Cache load fixtures".yellow
-
-        FactoryBot::Preload::FixtureCreator.record_ids = Marshal.load(File.binread(DUMP_RECORDS_PATH))
-        define_fixture_helpers
+        caching_max_mtime_fixtures(Marshal.dump(FactoryBot::Preload::FixtureCreator.record_ids))
       end
     end
 
@@ -48,17 +45,17 @@ module FactoryBot
         }.compact.max.round(6)
     end
 
-    def cached_mtime_fixtures
-      connection.query_value(<<-SQL) || Time.zone.at(0)
-        CREATE TABLE IF NOT EXISTS __factory_bot_preload_cache(fixtures_time timestamptz);
-        SELECT * FROM __factory_bot_preload_cache
+    def cached_fixtures
+      connection.query(<<-SQL).first
+        CREATE TABLE IF NOT EXISTS __factory_bot_preload_cache(fixtures_time timestamptz, fixtures_dump bytea);
+        SELECT fixtures_time, fixtures_dump FROM __factory_bot_preload_cache
       SQL
     end
 
-    def caching_max_mtime_fixtures
-      connection.execute(<<-SQL)
+    def caching_max_mtime_fixtures(dump_record_ids)
+      connection.execute <<-SQL
         TRUNCATE TABLE __factory_bot_preload_cache;
-        INSERT INTO __factory_bot_preload_cache VALUES ('#{max_mtime_fixtures.iso8601(6)}')
+        INSERT INTO __factory_bot_preload_cache VALUES ('#{max_mtime_fixtures.iso8601(6)}', '#{connection.raw_connection.escape_bytea(dump_record_ids)}')
       SQL
     end
 
