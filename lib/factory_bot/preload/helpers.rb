@@ -10,17 +10,18 @@ module FactoryBot
             #   fixture_get(name, User, :users)
             # end
             def #{table}(name)
-              fixture_get(name, #{table.to_s.classify}, :#{table})
+              fixture_get(name, :#{table})
             end
           RUBY
         end
       end
 
-      private def fixture_get(name, model, table)
-        if (record_id = Preload::FixtureCreator.record_ids.dig(table, name) || Preload::FixtureCreator.force_load_fixture(table, name))
-          model.find(record_id)
+      private def fixture_get(name, table)
+        if (global_id = Preload::FixtureCreator.record_ids.dig(table, name) ||
+           Preload::FixtureCreator.force_load_fixture(table, name))
+          GlobalID::Locator.locate global_id
         else
-          raise "Couldn't find #{name.inspect} fixture for #{model.name.inspect} model"
+          raise "Couldn't find #{name.inspect} fixture for Global Id #{global_id}"
         end
       end
     end
