@@ -55,7 +55,7 @@ module FactoryBot
 
       private def fixture(table, name, &block)
         record_ids[table] ||= {}
-        record_ids[table][name] ||= instance_eval(&block).id
+        record_ids[table][name] ||= instance_eval(&block).to_global_id
       end
 
       private def fixture_with_id(table, name, &block)
