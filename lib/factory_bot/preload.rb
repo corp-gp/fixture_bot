@@ -47,15 +47,15 @@ module FactoryBot
 
     def cached_fixtures
       connection.query(<<-SQL).first
-        CREATE TABLE IF NOT EXISTS __factory_bot_preload_cache(fixtures_time timestamptz, fixtures_dump bytea);
-        SELECT fixtures_time, fixtures_dump FROM __factory_bot_preload_cache
+        CREATE TABLE IF NOT EXISTS __factory_bot_preload_cache_v1(fixtures_time timestamptz, fixtures_dump bytea);
+        SELECT fixtures_time, fixtures_dump FROM __factory_bot_preload_cache_v1
       SQL
     end
 
     def caching_max_mtime_fixtures(dump_record_ids)
       connection.execute <<-SQL
-        TRUNCATE TABLE __factory_bot_preload_cache;
-        INSERT INTO __factory_bot_preload_cache VALUES ('#{max_mtime_fixtures.iso8601(6)}', '#{connection.raw_connection.escape_bytea(dump_record_ids)}')
+        TRUNCATE TABLE __factory_bot_preload_cache_v1;
+        INSERT INTO __factory_bot_preload_cache_v1 VALUES ('#{max_mtime_fixtures.iso8601(6)}', '#{connection.raw_connection.escape_bytea(dump_record_ids)}')
       SQL
     end
 
