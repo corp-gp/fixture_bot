@@ -16,6 +16,10 @@ module FactoryBot
 
     module_function
 
+    def after_load_fixtures(&block)
+      @after_load_fixtures = block
+    end
+
     def run
       cached_mtime, cached_record_ids = cached_fixtures
       if cached_mtime && cached_mtime == max_mtime_fixtures
@@ -30,6 +34,7 @@ module FactoryBot
         load_models
         define_fixture_helpers
         FactoryBot::Preload::FixtureCreator.load_to_db
+        @after_load_fixtures&.call
         caching_max_mtime_fixtures(Marshal.dump(FactoryBot::Preload::FixtureCreator.record_ids))
       end
     end
