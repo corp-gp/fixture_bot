@@ -22,7 +22,7 @@ source "https://rubygems.org"
 gem "rails"
 
 group :test, :development do
-  gem "factory_bot"
+  gem 'factory_bot_rails', require: false
   gem "factory_bot-preload", require: false, github: 'corp-gp/factory_bot-preload'
 end
 ```
@@ -124,7 +124,7 @@ FactoryBot.define do
     association :user
   end
 
-  preload do
+  preload(:users) do
     fixture(:john) { create(:user) }
     fixture(:myapp) { create(:project, user: users(:john)) }
   end
@@ -144,7 +144,7 @@ FactoryBot.define do
     user { users(:john) }
   end
 
-  preload do
+  preload(:projects) do
     fixture(:john) { create(:user) }
     fixture(:myapp) { create(:project, user: users(:john)) }
   end
@@ -170,7 +170,7 @@ FactoryBot.define do
     # ...
   end
 
-  preload do
+  preload(:users) do
     fixture(:john) { create(:user) }
     fixture_stub_const(:admin, :ADMIN_ID) { create(:user) }
   end
