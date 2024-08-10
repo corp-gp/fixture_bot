@@ -17,11 +17,11 @@ module FactoryBot
       end
 
       private def fixture_get(name, table)
-        if (global_id = Preload::FixtureCreator.record_ids.dig(table, name) ||
-           Preload::FixtureCreator.force_load_fixture(table, name))
-          GlobalID::Locator.locate global_id
+        model_name, model_id = Preload::FixtureCreator.record_ids.dig(table, name) || Preload::FixtureCreator.force_load_fixture(table, name)
+        if model_id
+          Object.const_get(model_name).find(model_id)
         else
-          raise "Couldn't find #{name.inspect} fixture for Global Id #{global_id}"
+          raise "Couldn't find fixture #{table}/#{name}"
         end
       end
     end

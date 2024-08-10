@@ -55,11 +55,14 @@ module FactoryBot
 
       private def fixture(table, name, &block)
         record_ids[table] ||= {}
-        record_ids[table][name] ||= instance_eval(&block).to_global_id
+        record_ids[table][name] ||= begin
+          model = instance_eval(&block)
+          [model.class.name, model.id]
+        end
       end
 
       private def fixture_with_id(table, name, &block)
-        record_id = fixture(table, name, &block).model_id
+        _, record_id = fixture(table, name, &block)
         ::ActiveRecord::Base.connection.execute <<~SQL
           SELECT setval(pg_get_serial_sequence('#{table}', 'id'), GREATEST(#{record_id}, nextval(pg_get_serial_sequence('#{table}', 'id'))))
         SQL
