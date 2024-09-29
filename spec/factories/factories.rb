@@ -20,10 +20,19 @@ FactoryBot.define do
     name { "Some asset" }
   end
 
-  preload do
+  preload(:users) do
     fixture(:john) { create(:user) }
+  end
+
+  preload(:skills) do
     fixture(:ruby) { create(:skill, user: users(:john)) }
+  end
+
+  preload(:preloads) do
     fixture(:my)   { create(:preload) }
+  end
+
+  preload(:assets) do
     fixture(:asset) { create(:asset) }
   end
 end

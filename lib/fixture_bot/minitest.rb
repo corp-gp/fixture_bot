@@ -3,16 +3,16 @@
 require "minitest"
 require "factory_bot/syntax/methods"
 
-module FactoryBot
+module FixtureBot
   module Preload
     def self.minitest
-      ::FactoryBot::Preload.clean
-      ::FactoryBot::Preload.run
+      ::FixtureBot.clean
+      ::FixtureBot.run
     end
 
     module MinitestSetup
       def setup
-        ::FactoryBot::Preload.reload_factories
+        ::FixtureBot.reload_factories
         super
       end
     end

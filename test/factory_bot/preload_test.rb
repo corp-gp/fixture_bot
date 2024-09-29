@@ -6,18 +6,18 @@ class PreloadTest < ActiveSupport::TestCase
   test "queues preloader block" do
     block = proc {}
     FactoryBot.preload(&block)
-    assert_includes FactoryBot::Preload.preloaders, block
+    assert_includes FixtureBot.preloaders, block
   end
 
   test "lazy load all factories, loading only when used" do
-    assert_equal FactoryBot::Preload.record_ids["User"][:john], 1
-    assert_nil FactoryBot::Preload.fixtures_per_test["User-john"]
+    assert_equal FixtureBot.record_ids["User"][:john], 1
+    assert_nil FixtureBot.fixtures_per_test["User-john"]
 
     user = users(:john)
     user.email = "super@gmail.com"
 
     assert_equal users(:john).object_id, user.object_id
-    assert_not_nil FactoryBot::Preload.fixtures_per_test["User-john"]
+    assert_not_nil FixtureBot.fixtures_per_test["User-john"]
   end
 
   test "injects model methods" do
@@ -53,17 +53,17 @@ class PreloadTest < ActiveSupport::TestCase
 
   test "removes records with :truncation" do
     assert_equal 1, User.count
-    FactoryBot::Preload.clean
+    FixtureBot.clean
     assert_equal 0, User.count
   end
 
-  test "includes factory_bot helpers" do
+  test "includes fixture_bot helpers" do
     assert_includes self.class.included_modules, FactoryBot::Syntax::Methods
   end
 
-  test "includes helpers into factory_bot" do
+  test "includes helpers into fixture_bot" do
     assert_includes FactoryBot::SyntaxRunner.included_modules,
-                    FactoryBot::Preload::Helpers
+                    FixtureBot::Helpers
   end
 
   test "freezes object" do
@@ -86,7 +86,7 @@ class PreloadTest < ActiveSupport::TestCase
   test "ignores reserved table names" do
     mod =
       Module.new do
-        include FactoryBot::Preload::Helpers
+        include FixtureBot::Helpers
       end
 
     instance = Object.new.extend(mod)

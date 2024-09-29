@@ -2,24 +2,7 @@
 
 require "spec_helper"
 
-describe FactoryBot::Preload do
-  it "queues preloader block" do
-    block = proc {}
-    FactoryBot.preload(&block)
-    expect(described_class.preloaders).to include(block)
-  end
-
-  it "lazies load all factories, loading only when used" do
-    expect(described_class.record_ids["User"][:john]).to eq(1)
-    expect(described_class.fixtures_per_test["User-john"]).to be_nil
-
-    user = users(:john)
-    user.email = "super@gmail.com"
-
-    expect(users(:john).object_id).to eq(user.object_id)
-    expect(described_class.fixtures_per_test["User-john"]).not_to be_nil
-  end
-
+describe FixtureBot do
   it "injects model methods" do
     expect { users(:john) }.not_to raise_error
   end
@@ -41,13 +24,13 @@ describe FactoryBot::Preload do
   end
 
   it "raises error for missing factories" do
-    expect { users(:mary) }.to raise_error(%(Couldn't find :mary fixture for "User" model))
+    expect { users(:mary) }.to raise_error("Couldn't find fixture users/mary")
   end
 
   it "ignores reserved table names when creating helpers" do
     mod =
       Module.new do
-        include FactoryBot::Preload::Helpers
+        include FixtureBot::Helpers
       end
 
     instance = Object.new.extend(mod)
@@ -61,44 +44,25 @@ describe FactoryBot::Preload do
     expect(build(:skill).user).to eq(users(:john))
   end
 
-  it "removes records with truncation" do
-    expect(User.count).to eq(1)
-    described_class.clean
-    expect(User.count).to eq(0)
-  end
-
   context "reloadable factories" do
-    before :all do
-      described_class.clean
-      described_class.run
-    end
-
-    before :each do
-      described_class.reload_factories
-    end
-
     it "freezes object" do
-      users(:john).destroy
-      expect(users(:john)).to be_frozen
+      user = users(:john)
+      user.destroy
+      expect(user).to be_frozen
     end
 
     it "updates invitation count" do
-      users(:john).increment(:invitations)
-      users(:john).save
-      expect(users(:john).invitations).to eq(1)
+      user = users(:john)
+
+      user.increment(:invitations)
+      user.save
+
+      expect(user.invitations).to eq(1)
     end
 
     it "reloads factory" do
       expect(users(:john).invitations).to eq(0)
       expect(users(:john)).not_to be_frozen
     end
-  end
-
-  it "includes factory_bot helpers" do
-    expect(self.class.included_modules).to include(FactoryBot::Syntax::Methods)
-  end
-
-  it "includes helpers into factory_bot" do
-    expect(FactoryBot::SyntaxRunner.included_modules).to include(FactoryBot::Preload::Helpers)
   end
 end

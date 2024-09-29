@@ -5,8 +5,8 @@ module FactoryBot
     module Default
       class DSL
         def preload(table, &block)
-          ::FactoryBot::Preload::FixtureCreator.tables[table] ||= []
-          ::FactoryBot::Preload::FixtureCreator.tables[table] << block
+          ::FixtureBot::FixtureCreator.tables[table] ||= []
+          ::FixtureBot::FixtureCreator.tables[table] << block
         end
       end
     end

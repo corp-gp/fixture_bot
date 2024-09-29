@@ -1,30 +1,24 @@
 inherit_gem:
   rubocop-gp:
-    - ./config/default.yml
+    - .rubocop.yml
 
 AllCops:
-  TargetRubyVersion: 2.5
+  TargetRubyVersion: 3.1
 
-Layout/EmptyLinesAroundClassBody:
-  Enabled: true
-  EnforcedStyle: no_empty_lines
-
-Layout/EmptyLinesAroundModuleBody:
-  Enabled: true
-  EnforcedStyle: no_empty_lines
-
-Style/StringLiterals:
-  Enabled: true
-  EnforcedStyle: double_quotes
-
-Gp/ClassOrModuleDeclaredInWrongFile:
+Lint/ConstantDefinitionInBlock:
   Enabled: false
 
-Gp/ModuleMethodInWrongFile:
+RSpec/LeakyConstantDeclaration:
   Enabled: false
 
 Rails/ApplicationRecord:
   Enabled: false
 
-Gp/PotentialSqlInjection:
+Rails/TimeZone:
   Enabled: false
+
+Layout/EmptyLinesAroundModuleBody:
+  EnforcedStyle: no_empty_lines
+
+Layout/EmptyLinesAroundClassBody:
+  EnforcedStyle: no_empty_lines

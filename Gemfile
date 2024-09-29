@@ -5,7 +5,6 @@ gemspec
 
 gem "bundler"
 gem "minitest-utils"
-gem "pry-meta"
 gem "rails"
 gem "rake"
 gem "rspec-rails"
