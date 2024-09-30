@@ -125,29 +125,25 @@ end
 ## Benchmarks
 #### factories vs fixtures
 
-simple model with 10 fields
 ```ruby
+# simple model with 10 fields
 Benchmark.ips do |x|
-  x.report("fixture") { brands(:lux) }.   # fixture:     4666.2 i/s
-  x.report("factory") { create(:brand) }  # factory:     1077.8 i/s - 4.33x  slower
+  x.report("fixture") { brands(:lux) }.   # fixture:  4666.2 i/s
+  x.report("factory") { create(:brand) }  # factory:  1077.8 i/s - 4.33x  slower
   x.compare!
 end
-```
 
-user model with 40+ fields, 1 association
-```ruby
+# user model with 40+ fields, 1 association
 Benchmark.ips do |x|
-  x.report("fixture") { users(:with_post_index)} # fixture:     3395.4 i/s
-  x.report("factory") { create(:user) }          # factory:      159.6 i/s - 21.27x  slower
+  x.report("fixture") { users(:with_post_index)} # fixture:  3395.4 i/s
+  x.report("factory") { create(:user) }          # factory:   159.6 i/s - 21.27x  slower
   x.compare!
 end
-```
 
-product model with 40+ fields, 5+ associations
-```ruby
+# product model with 40+ fields, 5+ associations
 Benchmark.ips do |x|
-  x.report("fixture") { products(:available) }         # fixture:     3564.3 i/s
-  x.report("factory") { create(:product, :available) } # factory:       67.7 i/s - 52.68x  slower
+  x.report("fixture") { products(:available) }         # fixture:  3564.3 i/s
+  x.report("factory") { create(:product, :available) } # factory:    67.7 i/s - 52.68x  slower
   x.compare!
 end
 ```
