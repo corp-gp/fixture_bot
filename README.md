@@ -1,189 +1,105 @@
-# fixture_bot
+# `fixture_bot`
 
-We all love Rails fixtures because they're fast, but we hate to deal with YAML/CSV/SQL files. Here enters [factory_bot](https://rubygems.org/gems/factory_bot) (FB).
+Improve the performance of your tests, as factories generate and insert data into the database every time, it can be slow. See [benchmarks](#Benchmarks).
 
-Now, you can easily create records by using predefined factories. The problem is that hitting the database everytime to create records is pretty slow. And believe me, you'll feel the pain when you have lots of tests/specs.
+Problems using [Rails fixtures](https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html):
 
-So here enters Factory Bot Preload (FBP). You can define which factories will be preloaded, so you don't have to recreate it every time (that will work for 99.37% of the time, according to statistics I just made up).
+- No data validation
+- Long loading of fixtures (for one or all tests - equally long)
+- YML format (no reuse code)
+- heavy support for fixtures and factories together
 
 ### Installation
 
-Add both FB and FBP to your Gemfile:
-
 ```ruby
-source "https://rubygems.org"
-
-gem "rails"
-
-group :test, :development do
+group :test do
   gem "factory_bot"
   gem "fixture_bot", require: false
 end
 ```
 
-Notice that adding `require: false` is important; otherwise you won't be able to
-run commands such as `rails db:test:prepare`.
+### Usage
+
+To define your fixture in factories, use the `preload` method
+
+```ruby
+FactoryBot.define do
+  factory :user do
+    name "John Doe"
+    sequence(:email) {|n| "john#{n}@example.org" }
+  end
+  
+  preload(:users) do
+    fixture_with_id(:first) { create(:user, id: 1) }
+    fixture(:john) { create(:user) }
+    fixture(:with_gmail) { create(:user, email: "email@gmail.com") }
+  end
+end
+```
+
+```ruby
+FactoryBot.define do
+  factory :projects do
+    name "My Project"
+    user { users(:with_gmail) }
+  end
+
+  preload(:users) do
+    fixture(:myapp) { create(:project, user: users(:john)) }
+  end
+end
+```
+
+
+### RSpec usage
+
+```ruby
+require "spec_helper"
+
+describe User do
+  let(:user) { users(:john) }
+
+  it "returns john's record" do
+    expect(users(:john)).to be_a User
+  end
+
+  it "returns myapp's record" do
+    expect(projects(:myapp).user).to eq users(:john)
+  end
+
+  it "each call fixture return new object" do
+    expect(user.object_id).not_to eq users(:john).object_id
+  end
+end
+```
 
 ### RSpec Setup
 
-On your `spec/spec_helper.rb` file, make sure that transactional fixtures are
-enabled. Here's is my file without all those RSpec comments:
+On your `spec/support/factory_bot.rb` file
 
 ```ruby
-ENV["RAILS_ENV"] ||= "test"
-require File.expand_path("../../config/environment", __FILE__)
-require "rspec/rails"
+require "fixture_bot" # the order is important, it must be before loaded factories
+require "factory_bot_rails"
 
-# First, load fixture_bot/preload.
-require "fixture_bot/preload"
-
-# Then load your factories
-Dir[Rails.root.join("spec/support/factories/**/*.rb")].each do |file|
-  require file
+FactoryBot::SyntaxRunner.class_eval do
+  include RSpec::Mocks::ExampleMethods
 end
 
 RSpec.configure do |config|
-  config.use_transactional_fixtures = true
-  config.mock_with :rspec
+  config.include FactoryBot::Syntax::Methods
 end
 ```
 
 ### Minitest Setup
 
 On your `test/test_helper.rb` file, make sure that transaction fixtures are
-enabled. Here's what your file may look like:
+enabled. Here's what your file may look like
 
 ```ruby
-ENV["RAILS_ENV"] ||= "test"
-require_relative "../config/environment"
-require "rails/test_help"
-
-module ActiveSupport
-  class TestCase
-    self.use_instantiated_fixtures = true
-  end
-end
-
-# First, load fixture_bot/preload.
-require "fixture_bot/preload"
-
-# Then load your factories.
-Dir["./test/support/factories/**/*.rb"].each do |file|
-  require file
-end
-
-# Finally, setup minitest.
-# Your factories won't behave correctly unless you
-# call `FixtureBot.minitest` after loading them.
+# First, load fixture_bot
+require "fixture_bot"
 FixtureBot.minitest
 ```
-
-### Usage
-
-Create your factories and load it from your setup file (either
-`test/test_helper.rb` or `spec/spec_helper.rb`) You may have something like
-this:
-
-```ruby
-FactoryBot.define do
-  factory :user do
-    name "John Doe"
-    sequence(:email) {|n| "john#{n}@example.org" }
-    sequence(:username) {|n| "john#{n}" }
-    password "test"
-    password_confirmation "test"
-  end
-
-  factory :projects do
-    name "My Project"
-    association :user
-  end
-end
-```
-
-To define your preloadable factories, just use the `preload` method:
-
-```ruby
-FactoryBot.define do
-  factory :user do
-    name "John Doe"
-    sequence(:email) {|n| "john#{n}@example.org" }
-    sequence(:username) {|n| "john#{n}" }
-    password "test"
-    password_confirmation "test"
-  end
-
-  factory :projects do
-    name "My Project"
-    association :user
-  end
-
-  preload do
-    fixture(:john) { create(:user) }
-    fixture(:myapp) { create(:project, user: users(:john)) }
-  end
-end
-```
-
-You can also use preloaded factories on factory definitions.
-
-```ruby
-FactoryBot.define do
-  factory :user do
-    # ...
-  end
-
-  factory :projects do
-    name "My Project"
-    user { users(:john) }
-  end
-
-  preload do
-    fixture(:john) { create(:user) }
-    fixture(:myapp) { create(:project, user: users(:john)) }
-  end
-end
-```
-
-
-If you need to create records with specifying id, use `fixture_stub_const`, it stub const in model to next value from generated primary key
-
-```ruby
-class User
-  ADMIN_ID = 10
-
-  def can_edit_article?
-    id == ADMIN_ID
-  end
-end
-```
-
-```ruby
-FactoryBot.define do
-  factory :user do
-    # ...
-  end
-
-  preload do
-    fixture(:john) { create(:user) }
-    fixture_stub_const(:admin, :ADMIN_ID) { create(:user) }
-  end
-end
-```
-
-```ruby
-describe User do
-  let(:admin) { users(:admin) }
-
-  it "admin can edit article" do
-    expect(admin).to be_can_edit_article
-  end
-end
-````
-
-
-Like Rails fixtures, FBP will define methods for each model. You can use it on
-your examples and alike.
 
 ```ruby
 require "test_helper"
@@ -199,25 +115,42 @@ class UserTest < ActiveSupport::TestCase
 end
 ```
 
-Or if you're using RSpec:
-
+## Callbacks
 ```ruby
-require "spec_helper"
-
-describe User do
-  let(:user) { users(:john) }
-
-  it "returns john's record" do
-    users(:john).should be_an(User)
-  end
-
-  it "returns myapp's record" do
-    projects(:myapp).user.should == users(:john)
-  end
+FixtureBot.after_load_fixtures do
+  # code uses fixtures
 end
 ```
 
-That's it!
+## Benchmarks
+#### factories vs fixtures
+
+simple model with 10 fields
+```ruby
+Benchmark.ips do |x|
+  x.report("fixture") { brands(:lux) }.   # fixture:     4666.2 i/s
+  x.report("factory") { create(:brand) }  # factory:     1077.8 i/s - 4.33x  slower
+  x.compare!
+end
+```
+
+user model with 40+ fields, 1 association
+```ruby
+Benchmark.ips do |x|
+  x.report("fixture") { users(:with_post_index)} # fixture:     3395.4 i/s
+  x.report("factory") { create(:user) }          # factory:      159.6 i/s - 21.27x  slower
+  x.compare!
+end
+```
+
+product model with 40+ fields, 5+ associations
+```ruby
+Benchmark.ips do |x|
+  x.report("fixture") { products(:available) }         # fixture:     3564.3 i/s
+  x.report("factory") { create(:product, :available) } # factory:       67.7 i/s - 52.68x  slower
+  x.compare!
+end
+```
 
 ## License
 
