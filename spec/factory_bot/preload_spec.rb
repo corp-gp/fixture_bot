@@ -44,6 +44,13 @@ describe FixtureBot do
     expect(build(:skill).user).to eq(users(:john))
   end
 
+  context "fixture with id" do
+    it "super admin user" do
+      expect(users(:ivan)).to be_super_admin
+      expect(users(:john)).not_to be_super_admin
+    end
+  end
+
   context "reloadable factories" do
     it "freezes object" do
       user = users(:john)

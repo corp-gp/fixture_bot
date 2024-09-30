@@ -21,6 +21,7 @@ FactoryBot.define do
   end
 
   preload(:users) do
+    fixture_with_id(:ivan) { create(:user, id: 1) }
     fixture(:john) { create(:user) }
   end
 

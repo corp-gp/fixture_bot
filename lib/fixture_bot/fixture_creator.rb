@@ -62,9 +62,12 @@ module FixtureBot
 
     private def fixture_with_id(table, name, &)
       _, record_id = fixture(table, name, &)
-      ::ActiveRecord::Base.connection.execute <<~SQL
-        SELECT setval(pg_get_serial_sequence('#{table}', 'id'), GREATEST(#{record_id}, nextval(pg_get_serial_sequence('#{table}', 'id'))))
-      SQL
+
+      if ::ActiveRecord::Base.connection.adapter_name == "PostgreSQL"
+        ::ActiveRecord::Base.connection.execute <<~SQL
+          SELECT setval(pg_get_serial_sequence('#{table}', 'id'), GREATEST(#{record_id}, nextval(pg_get_serial_sequence('#{table}', 'id'))))
+        SQL
+      end
     end
   end
 end
