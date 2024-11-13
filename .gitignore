@@ -4,5 +4,4 @@
 pkg
 tmp
 *.log
-*.lock
 coverage
