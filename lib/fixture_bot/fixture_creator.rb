@@ -56,16 +56,16 @@ module FixtureBot
       record_ids[table][name] ||=
         begin
           model = instance_eval(&)
-          [model.class.name, model.id]
+          [model.class.name, model.id, model.class.table_name]
         end
     end
 
     private def fixture_with_id(table, name, &)
-      _, record_id = fixture(table, name, &)
+      _, record_id, db_table_name = fixture(table, name, &)
 
       if ::ActiveRecord::Base.connection.respond_to?(:postgresql_version)
         ::ActiveRecord::Base.connection.execute <<~SQL
-          SELECT setval(pg_get_serial_sequence('#{table}', 'id'), GREATEST(#{record_id}, nextval(pg_get_serial_sequence('#{table}', 'id'))))
+          SELECT setval(pg_get_serial_sequence('#{db_table_name}', 'id'), GREATEST(#{record_id}, nextval(pg_get_serial_sequence('#{db_table_name}', 'id'))))
         SQL
       end
     end
