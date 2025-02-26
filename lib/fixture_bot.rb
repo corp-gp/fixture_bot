@@ -28,7 +28,7 @@ module FixtureBot
     else
       colored_output "Full load fixtures"
 
-      clean_db
+      ActiveRecord::Tasks::DatabaseTasks.truncate_all
       load_models
       define_fixture_helpers
       FixtureBot::FixtureCreator.load_to_db
@@ -56,7 +56,6 @@ module FixtureBot
   end
 
   def caching_max_mtime_fixtures(dump_record_ids)
-    truncate_tables(["__fixture_bot_cache_v1"])
     connection.execute <<-SQL
       INSERT INTO __fixture_bot_cache_v1 VALUES ('#{max_mtime_fixtures.iso8601(6)}', '#{Base64.encode64(dump_record_ids)}')
     SQL
@@ -74,30 +73,8 @@ module FixtureBot
     ::FactoryBot::SyntaxRunner.include(::FixtureBot::Helpers)
   end
 
-  RESERVED_TABLES = %w[
-    ar_internal_metadata
-    schema_migrations
-  ].freeze
-
-  def clean_db
-    connection.disable_referential_integrity do
-      connection.execute(truncate_tables(connection.tables - RESERVED_TABLES))
-    end
-  end
-
   def connection
     ::ActiveRecord::Base.connection
-  end
-
-  def truncate_tables(tables)
-    case connection.adapter_name
-    when "SQLite"
-      tables.map { |table| "DELETE FROM #{connection.quote_table_name(table)}" }.join(";")
-    when "PostgreSQL"
-      "TRUNCATE TABLE #{tables.map { |table| connection.quote_table_name(table) }.join(',')} RESTART IDENTITY CASCADE"
-    else
-      "TRUNCATE TABLE #{tables.map { |table| connection.quote_table_name(table) }.join(',')}"
-    end
   end
 
   def colored_output(text)
