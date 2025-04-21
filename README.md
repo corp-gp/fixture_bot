@@ -18,6 +18,14 @@ group :test do
 end
 ```
 
+If you're using multiple schemas, include them in the `database.yml` configuration file.
+
+```
+test:
+  database: app_test
+  schema_search_path: "public,shops,markets"
+```
+
 ### Usage
 
 To define your fixture in factories, use the `preload` method
