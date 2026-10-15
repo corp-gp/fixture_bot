@@ -12,6 +12,8 @@ module FixtureBot
   require "fixture_bot/minitest" if defined?(Minitest)
   require "fixture_bot/extension"
 
+  CACHE_TABLE = "__fixture_bot_cache_v2"
+
   module_function
 
   def after_load_fixtures(&block)
@@ -48,22 +50,26 @@ module FixtureBot
       }.compact.max.round(6)
   end
 
+  # rubocop:disable Gp/PotentialSqlInjection -- the table name is a constant, values go through quote
+
   # One statement per call: adapters such as SQLite run only the first statement of a batch.
   # Columns are text so that every adapter reads back what it wrote: the time is compared as
   # an ISO 8601 string, and the dump is Base64. v1 used timestamptz and bytea
   def cached_fixtures
-    connection.execute("CREATE TABLE IF NOT EXISTS __fixture_bot_cache_v2(fixtures_time text, fixtures_dump text)")
-    connection.select_rows("SELECT fixtures_time, fixtures_dump FROM __fixture_bot_cache_v2").first
+    connection.execute("CREATE TABLE IF NOT EXISTS #{CACHE_TABLE}(fixtures_time text, fixtures_dump text)")
+    connection.select_rows("SELECT fixtures_time, fixtures_dump FROM #{CACHE_TABLE}").first
   end
 
   # The table keeps exactly one row: truncate_all clears it only where database configs are known
   def caching_max_mtime_fixtures(dump_record_ids)
-    connection.execute("DELETE FROM __fixture_bot_cache_v2")
+    connection.execute("DELETE FROM #{CACHE_TABLE}")
     connection.execute <<~SQL
-      INSERT INTO __fixture_bot_cache_v2
+      INSERT INTO #{CACHE_TABLE}
       VALUES (#{connection.quote(max_mtime_fixtures.iso8601(6))}, #{connection.quote(Base64.encode64(dump_record_ids))})
     SQL
   end
+
+  # rubocop:enable Gp/PotentialSqlInjection
 
   def load_models
     return unless defined?(Rails)
