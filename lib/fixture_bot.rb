@@ -20,7 +20,7 @@ module FixtureBot
 
   def run
     cached_mtime, cached_record_ids = cached_fixtures
-    if cached_mtime && cached_mtime == max_mtime_fixtures
+    if cached_mtime && cached_mtime == max_mtime_fixtures.iso8601(6)
       colored_output "Cache load fixtures"
 
       FixtureBot::FixtureCreator.record_ids = Marshal.load(Base64.decode64(cached_record_ids))
@@ -48,16 +48,20 @@ module FixtureBot
       }.compact.max.round(6)
   end
 
+  # One statement per call: adapters such as SQLite run only the first statement of a batch.
+  # Columns are text so that every adapter reads back what it wrote: the time is compared as
+  # an ISO 8601 string, and the dump is Base64. v1 used timestamptz and bytea
   def cached_fixtures
-    connection.query(<<-SQL).first
-      CREATE TABLE IF NOT EXISTS __fixture_bot_cache_v1(fixtures_time timestamptz, fixtures_dump bytea);
-      SELECT fixtures_time, fixtures_dump FROM __fixture_bot_cache_v1
-    SQL
+    connection.execute("CREATE TABLE IF NOT EXISTS __fixture_bot_cache_v2(fixtures_time text, fixtures_dump text)")
+    connection.select_rows("SELECT fixtures_time, fixtures_dump FROM __fixture_bot_cache_v2").first
   end
 
+  # The table keeps exactly one row: truncate_all clears it only where database configs are known
   def caching_max_mtime_fixtures(dump_record_ids)
-    connection.execute <<-SQL
-      INSERT INTO __fixture_bot_cache_v1 VALUES ('#{max_mtime_fixtures.iso8601(6)}', '#{Base64.encode64(dump_record_ids)}')
+    connection.execute("DELETE FROM __fixture_bot_cache_v2")
+    connection.execute <<~SQL
+      INSERT INTO __fixture_bot_cache_v2
+      VALUES (#{connection.quote(max_mtime_fixtures.iso8601(6))}, #{connection.quote(Base64.encode64(dump_record_ids))})
     SQL
   end
 
