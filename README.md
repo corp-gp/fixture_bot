@@ -124,6 +124,7 @@ end
 ```
 
 ## Callbacks
+Blocks run after a full load of fixtures (not when they are taken from the cache), in the order they were added.
 ```ruby
 FixtureBot.after_load_fixtures do
   # code uses fixtures
