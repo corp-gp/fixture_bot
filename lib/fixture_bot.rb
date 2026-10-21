@@ -15,7 +15,11 @@ module FixtureBot
   module_function
 
   def after_load_fixtures(&block)
-    @after_load_fixtures = block
+    after_load_fixtures_callbacks << block
+  end
+
+  def after_load_fixtures_callbacks
+    @after_load_fixtures_callbacks ||= []
   end
 
   def run
@@ -32,7 +36,7 @@ module FixtureBot
       load_models
       define_fixture_helpers
       FixtureBot::FixtureCreator.load_to_db
-      @after_load_fixtures&.call
+      after_load_fixtures_callbacks.each(&:call)
       caching_max_mtime_fixtures(Marshal.dump(FixtureBot::FixtureCreator.record_ids))
     end
   end

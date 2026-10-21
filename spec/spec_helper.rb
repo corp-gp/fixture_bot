@@ -35,6 +35,12 @@ end
 
 require "fixture_bot"
 
+module AfterLoadFixturesCalls
+  def self.list = @list ||= []
+end
+FixtureBot.after_load_fixtures { AfterLoadFixturesCalls.list << :first }
+FixtureBot.after_load_fixtures { AfterLoadFixturesCalls.list << :second }
+
 FactoryBot.find_definitions
 
 RSpec.configure do |config|
