@@ -157,6 +157,29 @@ Benchmark.ips do |x|
 end
 ```
 
+## Development
+
+Specs run on SQLite in memory by default:
+
+```bash
+bundle exec rspec
+```
+
+To run them on PostgreSQL, start a server in Docker and point the specs at it:
+
+```bash
+docker run --name fixture-bot-postgres --rm -d -p 54329:5432 \
+  -e POSTGRES_DB=test_fixture_bot -e POSTGRES_HOST_AUTH_METHOD=trust postgres
+
+FIXTURE_BOT_DB=postgresql FIXTURE_BOT_PG_PORT=54329 bundle exec rspec
+
+docker stop fixture-bot-postgres
+```
+
+Connection settings: `FIXTURE_BOT_PG_HOST` (default `localhost`), `FIXTURE_BOT_PG_PORT` (`5432`),
+`FIXTURE_BOT_PG_USER` (`postgres`), `FIXTURE_BOT_PG_PASSWORD`, `FIXTURE_BOT_PG_DATABASE` (`test_fixture_bot`).
+The specs recreate the `public` schema of that database on every run.
+
 ## License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).

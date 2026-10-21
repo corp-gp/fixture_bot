@@ -10,13 +10,32 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    name: Ruby ${{ matrix.ruby }}, ${{ matrix.db }}
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_fixture_bot
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     strategy:
+      fail-fast: false
       matrix:
         ruby:
-          - 3.1
-          - 3.2
-          - 3.3
+          - "3.3"
+          - "3.4"
+          - "4.0"
+        db:
+          - sqlite
+          - postgresql
+
+    env:
+      FIXTURE_BOT_DB: ${{ matrix.db }}
+      FIXTURE_BOT_PG_PASSWORD: postgres
 
     steps:
     - uses: actions/checkout@v2
